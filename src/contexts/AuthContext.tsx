@@ -126,8 +126,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(updatedUser); // Update context state with the new avatar URL
       return updatedUser;
     } catch (error) {
-      console.error("Update avatar failed:", error);
-      throw error;
+      // Removed console.error here to prevent Next.js dev overlay for this handled error
+      throw error; // Re-throw for the UI component (profile page) to handle with a toast
     } finally {
       setIsLoading(false);
     }
