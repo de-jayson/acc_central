@@ -1,5 +1,6 @@
 export interface User {
   username: string;
+  avatarDataUrl?: string; // To store custom avatar as a data URL
   // Note: In a real app, never store passwords directly.
   // This is a simplified model for local credential simulation.
 }
@@ -34,3 +35,4 @@ export interface UserSettings {
   pushNotifications?: boolean;
   shareData?: boolean;
 }
+

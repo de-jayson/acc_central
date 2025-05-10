@@ -46,7 +46,7 @@ export function AppHeader() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative flex items-center gap-2 p-1.5 h-auto rounded-full focus-visible:ring-ring focus-visible:ring-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={`https://i.pravatar.cc/40?u=${user.username}`} alt={user.username} data-ai-hint="user avatar" />
+                  <AvatarImage src={user.avatarDataUrl || `https://i.pravatar.cc/40?u=${user.username}`} alt={user.username} data-ai-hint="user avatar" />
                   <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
                 </Avatar>
                 <span className="hidden sm:inline font-medium">{user.username}</span>

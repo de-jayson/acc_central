@@ -24,7 +24,7 @@ export async function signUp(username: string, password?: string): Promise<User>
     throw new Error('Username already exists.');
   }
 
-  const newUser: User = { username };
+  const newUser: User = { username, avatarDataUrl: undefined }; // Initialize avatarDataUrl
   users.push(newUser);
   setItem(USERS_KEY, users);
   
@@ -107,14 +107,17 @@ export async function updateUsername(oldUsername: string, newUsername: string): 
     throw new Error("Current user not found.");
   }
 
-  // Update username in users array
+  // Preserve avatarDataUrl when updating username
+  const currentAvatarDataUrl = users[userIndex].avatarDataUrl;
   users[userIndex].username = newUsername;
+  // users[userIndex].avatarDataUrl remains currentAvatarDataUrl implicitly
   setItem(USERS_KEY, users);
 
   // Update logged-in user
   const loggedInUser = getCurrentUser();
   if (loggedInUser && loggedInUser.username === oldUsername) {
     loggedInUser.username = newUsername;
+    // loggedInUser.avatarDataUrl remains the same
     setItem(LOGGED_IN_USER_KEY, loggedInUser);
   }
 
@@ -128,7 +131,7 @@ export async function updateUsername(oldUsername: string, newUsername: string): 
   });
   setItem(BANK_ACCOUNTS_KEY, bankAccounts);
 
-  return { username: newUsername };
+  return { username: newUsername, avatarDataUrl: currentAvatarDataUrl };
 }
 
 /**
@@ -147,4 +150,32 @@ export async function updatePassword(username: string, newPassword: string): Pro
   }
   // No actual password change occurs in localStorage for this demo.
   return Promise.resolve();
+}
+
+/**
+ * Updates the avatar for the current user.
+ * @param username The username of the user.
+ * @param avatarDataUrl The new avatar data URL.
+ * @returns A Promise that resolves to the updated User object.
+ */
+export async function updateUserAvatar(username: string, avatarDataUrl: string): Promise<User> {
+  let users = getItem<User[]>(USERS_KEY) || [];
+  const userIndex = users.findIndex(u => u.username === username);
+
+  if (userIndex === -1) {
+    throw new Error("User not found.");
+  }
+
+  users[userIndex].avatarDataUrl = avatarDataUrl;
+  setItem(USERS_KEY, users);
+
+  const loggedInUser = getCurrentUser();
+  if (loggedInUser && loggedInUser.username === username) {
+    loggedInUser.avatarDataUrl = avatarDataUrl;
+    setItem(LOGGED_IN_USER_KEY, loggedInUser);
+    return loggedInUser;
+  }
+  // This case should ideally not happen if the logged-in user is the one being updated
+  // but return the updated user from the list as a fallback.
+  return users[userIndex];
 }

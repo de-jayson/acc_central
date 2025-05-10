@@ -19,15 +19,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { User, KeyRound, Shield, Eye, EyeOff } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { User, KeyRound, Eye, EyeOff, Image as ImageIcon, UploadCloud } from "lucide-react"; // Added ImageIcon, UploadCloud
 
 const changeUsernameSchema = z.object({
   newUsername: z.string().min(3, "Username must be at least 3 characters."),
 });
 
 const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required."), // Remains for UI, but not validated by mock service
+  currentPassword: z.string().min(1, "Current password is required."),
   newPassword: z.string().min(6, "New password must be at least 6 characters."),
   confirmNewPassword: z.string(),
 }).refine(data => data.newPassword === data.confirmNewPassword, {
@@ -36,11 +35,15 @@ const changePasswordSchema = z.object({
 });
 
 export default function ProfilePage() {
-  const { user, isLoading: authLoading, updateUsername, updatePassword } = useAuth();
+  const { user, isLoading: authLoading, updateUsername, updatePassword, updateAvatar } = useAuth();
   const { toast } = useToast();
   const [showCurrentPassword, setShowCurrentPassword] = React.useState(false);
   const [showNewPassword, setShowNewPassword] = React.useState(false);
   const [showConfirmNewPassword, setShowConfirmNewPassword] = React.useState(false);
+
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [imagePreview, setImagePreview] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const usernameForm = useForm<z.infer<typeof changeUsernameSchema>>({
     resolver: zodResolver(changeUsernameSchema),
@@ -50,6 +53,14 @@ export default function ProfilePage() {
   React.useEffect(() => {
     if (user) {
       usernameForm.reset({ newUsername: user.username });
+      if (user.avatarDataUrl) {
+        setImagePreview(user.avatarDataUrl);
+      } else {
+        // Set a default placeholder or clear if no custom avatar
+        // For pravatar, it's dynamically generated, so null is fine for preview
+        // to fall back to pravatar unless a new image is selected.
+        setImagePreview(null); 
+      }
     }
   }, [user, usernameForm]);
 
@@ -104,13 +115,55 @@ export default function ProfilePage() {
     }
   };
 
-  if (authLoading && !user) { // Check !user to avoid flashing during username update
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSavePicture = async () => {
+    if (!imagePreview) { // Check imagePreview instead of selectedFile, as it holds the data URL
+      toast({ title: "No image selected", description: "Please select an image file.", variant: "destructive" });
+      return;
+    }
+    if (!user || !updateAvatar) {
+        toast({ title: "Error", description: "User context not available.", variant: "destructive" });
+        return;
+    }
+
+    try {
+      await updateAvatar(imagePreview); // imagePreview is the data URL
+      toast({
+        title: "Profile Picture Updated",
+        description: "Your new profile picture has been saved.",
+      });
+      setSelectedFile(null); // Clear selection after save
+    } catch (error: any) {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Could not update profile picture.",
+        variant: "destructive",
+      });
+    }
+  };
+
+
+  if (authLoading && !user) {
     return <div className="p-8">Loading profile...</div>;
   }
 
   if (!user) {
     return <div className="p-8">User not found. Please log in.</div>;
   }
+
+  const currentAvatarSrc = imagePreview || user.avatarDataUrl || `https://i.pravatar.cc/150?u=${user.username}`;
+
 
   return (
     <div className="space-y-8">
@@ -119,7 +172,7 @@ export default function ProfilePage() {
       <Card className="shadow-lg">
         <CardHeader className="flex flex-row items-center gap-4">
           <Avatar className="h-16 w-16">
-            <AvatarImage src={`https://i.pravatar.cc/100?u=${user.username}`} alt={user.username} data-ai-hint="user avatar large" />
+            <AvatarImage src={user.avatarDataUrl || `https://i.pravatar.cc/100?u=${user.username}`} alt={user.username} data-ai-hint="user avatar large" />
             <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
           </Avatar>
           <div>
@@ -128,6 +181,43 @@ export default function ProfilePage() {
           </div>
         </CardHeader>
       </Card>
+
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <ImageIcon className="h-5 w-5 text-accent" />
+            Change Profile Picture
+          </CardTitle>
+          <CardDescription>Update your avatar. Choose a new image below.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col items-center gap-4">
+            <Avatar className="h-32 w-32">
+              <AvatarImage src={currentAvatarSrc} alt="Profile preview" />
+              <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
+            </Avatar>
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/png, image/jpeg, image/gif"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <UploadCloud className="mr-2 h-4 w-4" /> Choose Image
+            </Button>
+          </div>
+          {selectedFile && imagePreview && (
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">Selected: {selectedFile.name}</p>
+              <Button onClick={handleSavePicture} className="mt-2 bg-accent hover:bg-accent/90 text-accent-foreground" disabled={authLoading}>
+                {authLoading ? "Saving..." : "Save Picture"}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
 
       <Card className="shadow-lg">
         <CardHeader>

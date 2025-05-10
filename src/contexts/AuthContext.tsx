@@ -11,6 +11,7 @@ import {
   isAuthenticated as isAuthenticatedService,
   updateUsername as updateUsernameService,
   updatePassword as updatePasswordService,
+  updateUserAvatar as updateUserAvatarService, // Import new service
 } from '@/services/authService';
 import { useRouter } from 'next/navigation';
 
@@ -23,6 +24,7 @@ interface AuthContextType {
   logOut: () => Promise<void>;
   updateUsername: (newUsername: string) => Promise<User | void>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  updateAvatar: (avatarDataUrl: string) => Promise<User | void>; // Add new method
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -116,6 +118,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user]);
 
+  const updateAvatar = useCallback(async (avatarDataUrl: string) => {
+    if (!user) throw new Error("User not authenticated");
+    setIsLoading(true);
+    try {
+      const updatedUser = await updateUserAvatarService(user.username, avatarDataUrl);
+      setUser(updatedUser); // Update context state with the new avatar URL
+      return updatedUser;
+    } catch (error) {
+      console.error("Update avatar failed:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, setUser]);
+
 
   return (
     <AuthContext.Provider value={{ 
@@ -126,7 +143,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       logIn, 
       logOut,
       updateUsername,
-      updatePassword
+      updatePassword,
+      updateAvatar // Provide new method
     }}>
       {children}
     </AuthContext.Provider>
