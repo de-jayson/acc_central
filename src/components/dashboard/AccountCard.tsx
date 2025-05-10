@@ -17,8 +17,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import React from "react"; // Import React for React.memo
-import { defaultCountry } from "@/constants/countries";
+import React from "react"; 
+import { defaultCountry } from "@/constants/countries"; // defaultCountry is now Ghana (GHS)
 
 interface AccountCardProps {
   account: BankAccount;
@@ -35,20 +35,20 @@ const accountTypeIcons: Record<AccountType, React.ElementType> = {
   [AccountType.OTHER]: FileQuestion,
 };
 
-// Wrap AccountCardComponent with React.memo
 export const AccountCard = React.memo(function AccountCardComponent({ account, onEdit }: AccountCardProps) {
   const { toast } = useToast();
   const { deleteAccount: deleteAccountContext, isLoading } = useAccounts();
 
   const IconComponent = accountTypeIcons[account.accountType] || LandmarkIcon;
 
-  const formatCurrency = (amount: number, currencyCode: string) => {
+  const formatCurrency = (amount: number, currencyCode: string = defaultCountry.currencyCode) => {
+    const effectiveCurrencyCode = currencyCode || defaultCountry.currencyCode;
+    const locale = effectiveCurrencyCode === "GHS" ? 'en-GH' : 'en-US'; // Use appropriate locale
     try {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(amount);
+      return new Intl.NumberFormat(locale, { style: 'currency', currency: effectiveCurrencyCode }).format(amount);
     } catch (error) {
-      // Fallback for invalid currency codes (e.g. for older accounts before currency was introduced)
-      console.warn(`Invalid currency code: ${currencyCode}. Defaulting to USD display.`);
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: defaultCountry.currencyCode }).format(amount);
+      console.warn(`Invalid currency code: ${effectiveCurrencyCode}. Displaying with symbol.`);
+      return `${defaultCountry.currencySymbol}${amount.toFixed(2)}`;
     }
   };
 
@@ -81,7 +81,7 @@ export const AccountCard = React.memo(function AccountCardComponent({ account, o
       </CardHeader>
       <CardContent className="flex-grow space-y-3">
         <div className="text-3xl font-bold text-foreground">
-          {formatCurrency(account.balance, account.currencyCode || defaultCountry.currencyCode)}
+          {formatCurrency(account.balance, account.currencyCode)}
         </div>
         {account.description && (
           <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2" title={account.description}>

@@ -6,16 +6,7 @@ export interface CountryInfo {
 }
 
 export const countries: CountryInfo[] = [
-  { name: "United States", code: "US", currencyCode: "USD", currencySymbol: "$" },
-  { name: "Canada", code: "CA", currencyCode: "CAD", currencySymbol: "CA$" },
-  { name: "United Kingdom", code: "GB", currencyCode: "GBP", currencySymbol: "£" },
-  { name: "Germany", code: "DE", currencyCode: "EUR", currencySymbol: "€" },
-  { name: "France", code: "FR", currencyCode: "EUR", currencySymbol: "€" },
-  { name: "Australia", code: "AU", currencyCode: "AUD", currencySymbol: "A$" },
-  { name: "Japan", code: "JP", currencyCode: "JPY", currencySymbol: "¥" },
-  { name: "India", code: "IN", currencyCode: "INR", currencySymbol: "₹" },
-  { name: "Brazil", code: "BR", currencyCode: "BRL", currencySymbol: "R$" },
-  { name: "South Africa", code: "ZA", currencyCode: "ZAR", currencySymbol: "R" },
+  { name: "Ghana", code: "GH", currencyCode: "GHS", currencySymbol: "GH₵" },
 ];
 
-export const defaultCountry = countries[0]; // Default to United States
+export const defaultCountry = countries[0]; // Default to Ghana

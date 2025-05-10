@@ -7,29 +7,29 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PlusCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { defaultCountry } from "@/constants/countries";
+import { defaultCountry } from "@/constants/countries"; // defaultCountry is now Ghana (GHS)
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { accounts, isLoading: accountsLoading, fetchAccounts } = useAccounts();
 
-  // Calculate total balance only for USD accounts for simplicity
-  const usdAccounts = accounts.filter(acc => (acc.currencyCode || defaultCountry.currencyCode) === 'USD');
-  const totalUsdBalance = usdAccounts.reduce((sum, acc) => sum + acc.balance, 0);
-  const hasOnlyUsdAccounts = accounts.every(acc => (acc.currencyCode || defaultCountry.currencyCode) === 'USD');
-  const hasMixedCurrencies = accounts.length > 0 && !hasOnlyUsdAccounts;
+  // All accounts are now assumed to be in GHS
+  const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
 
-  const formatCurrency = (amount: number, currencyCode: string = 'USD') => {
-     try {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(amount);
+  const formatCurrency = (amount: number) => {
+     // Currency code is now fixed to GHS from defaultCountry
+    try {
+      return new Intl.NumberFormat('en-GH', { style: 'currency', currency: defaultCountry.currencyCode }).format(amount);
     } catch (error) {
-      console.warn(`Invalid currency code: ${currencyCode} in DashboardPage. Defaulting to USD display.`);
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: defaultCountry.currencyCode }).format(amount);
+      // Fallback in case 'en-GH' or GHS is not supported by browser, though unlikely for major currencies.
+      console.warn(`Currency formatting error for ${defaultCountry.currencyCode}. Defaulting to basic display.`);
+      return `${defaultCountry.currencySymbol}${amount.toFixed(2)}`;
     }
   };
   
   const handleEditAccount = (account: any) => {
     console.log("Editing account:", account);
+    // This would ideally navigate to an edit page: router.push(`/dashboard/edit-account/${account.id}`);
     alert(`Edit functionality for "${account.accountName}" is not yet implemented.`);
   };
 
@@ -74,13 +74,11 @@ export default function DashboardPage() {
       {accounts.length > 0 && (
          <div className="bg-card p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold text-primary mb-1">
-              {hasOnlyUsdAccounts ? "Total Portfolio Value" : "Total USD Portfolio Value"}
+              Total Portfolio Value
             </h2>
-            <p className="text-3xl font-bold text-foreground">{formatCurrency(totalUsdBalance, 'USD')}</p>
+            <p className="text-3xl font-bold text-foreground">{formatCurrency(totalBalance)}</p>
             <p className="text-sm text-muted-foreground">
-              {accounts.length} account(s) managed.
-              {hasMixedCurrencies && " Showing sum for USD accounts only."}
-              {accounts.length > 0 && usdAccounts.length === 0 && !hasOnlyUsdAccounts && " No USD accounts to summarize."}
+              {accounts.length} account(s) managed in {defaultCountry.currencyCode}.
             </p>
         </div>
       )}
@@ -93,10 +91,10 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="text-center py-12 bg-card rounded-lg shadow">
-          <img src="https://picsum.photos/seed/emptyState/300/200" alt="No accounts" data-ai-hint="empty state illustration" className="mx-auto mb-6 rounded-md" />
+          <img src="https://picsum.photos/seed/emptyStateGhana/300/200" alt="No accounts" data-ai-hint="empty state illustration" className="mx-auto mb-6 rounded-md" />
           <h2 className="text-2xl font-semibold text-primary mb-2">No Accounts Yet</h2>
           <p className="text-muted-foreground mb-6">
-            Get started by adding your first bank account.
+            Get started by adding your first bank account. All accounts are in {defaultCountry.currencyCode}.
           </p>
           <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
             <Link href="/dashboard/add-account">

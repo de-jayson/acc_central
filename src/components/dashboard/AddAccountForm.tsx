@@ -23,16 +23,15 @@ import { useRouter } from "next/navigation";
 import { AccountType, type BankAccount } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle } from "lucide-react";
-import { countries, defaultCountry, type CountryInfo } from "@/constants/countries";
-import React, { useState } from "react";
+import { defaultCountry } from "@/constants/countries"; // defaultCountry is now Ghana
+import React from "react";
 
 const formSchema = z.object({
   accountName: z.string().min(2, { message: "Account name must be at least 2 characters." }),
   bankName: z.string().min(2, { message: "Bank name must be at least 2 characters." }),
   balance: z.coerce.number().min(0, { message: "Balance must be a non-negative number." }),
   accountType: z.nativeEnum(AccountType, { errorMap: () => ({ message: "Please select an account type." }) }),
-  country: z.string().min(2, { message: "Please select a country."}), // Country code
-  currencyCode: z.string().min(3, { message: "Currency code is required." }),
+  // currencyCode is now fixed to GHS, country selection removed.
   description: z.string().optional(),
 });
 
@@ -40,7 +39,7 @@ export function AddAccountForm() {
   const { addAccount, isLoading } = useAccounts();
   const { toast } = useToast();
   const router = useRouter();
-  const [selectedCurrencySymbol, setSelectedCurrencySymbol] = useState<string>(defaultCountry.currencySymbol);
+  const currencySymbol = defaultCountry.currencySymbol; // Should be GH₵
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -48,32 +47,18 @@ export function AddAccountForm() {
       accountName: "",
       bankName: "",
       balance: 0,
-      country: defaultCountry.code,
-      currencyCode: defaultCountry.currencyCode,
+      // country: defaultCountry.code, // Removed
+      // currencyCode: defaultCountry.currencyCode, // Will be set directly
       description: "",
     },
   });
 
-  const handleCountryChange = (countryCode: string) => {
-    const selectedCountry = countries.find(c => c.code === countryCode);
-    if (selectedCountry) {
-      form.setValue("currencyCode", selectedCountry.currencyCode);
-      setSelectedCurrencySymbol(selectedCountry.currencySymbol);
-    }
-  };
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      // The Omit type for addAccount is Omit<BankAccount, 'id' | 'userId'>
-      // Ensure `values` matches this, specifically `currencyCode` and `country` are part of `BankAccount`
       const accountData: Omit<BankAccount, 'id' | 'userId'> = {
-        accountName: values.accountName,
-        bankName: values.bankName,
-        balance: values.balance,
-        accountType: values.accountType,
-        currencyCode: values.currencyCode,
-        country: values.country,
-        description: values.description,
+        ...values,
+        currencyCode: defaultCountry.currencyCode, // Always use GHS
+        country: defaultCountry.code, // Set default country code (Ghana)
       };
       await addAccount(accountData);
       toast({
@@ -97,7 +82,7 @@ export function AddAccountForm() {
           <PlusCircle className="h-7 w-7 mr-2 text-accent" />
           Add New Bank Account
         </CardTitle>
-        <CardDescription>Fill in the details below to add a new account to your dashboard.</CardDescription>
+        <CardDescription>Fill in the details below to add a new account. Currency is set to {defaultCountry.currencyCode} ({currencySymbol}).</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -123,7 +108,7 @@ export function AddAccountForm() {
                   <FormItem>
                     <FormLabel>Bank Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Chase, Bank of America" {...field} />
+                      <Input placeholder="e.g., GCB, Ecobank" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -131,63 +116,31 @@ export function AddAccountForm() {
               />
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <FormField
-                control={form.control}
-                name="country"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Country</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        handleCountryChange(value);
-                      }} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a country" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {countries.map((country: CountryInfo) => (
-                          <SelectItem key={country.code} value={country.code}>
-                            {country.name} ({country.currencyCode})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="balance"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Current Balance ({selectedCurrencySymbol})</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                          {selectedCurrencySymbol}
-                        </span>
-                        <Input 
-                          type="number" 
-                          step="0.01" 
-                          placeholder="0.00" 
-                          {...field} 
-                          className="pl-8" // Adjust padding for symbol
-                        />
-                      </div>
-                    </FormControl>
-                    <FormDescription>Enter the current balance of this account.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="balance"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Current Balance ({currencySymbol})</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        {currencySymbol}
+                      </span>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="0.00" 
+                        {...field} 
+                        className="pl-8 md:pl-10" // Adjust padding for GHS symbol
+                      />
+                    </div>
+                  </FormControl>
+                  <FormDescription>Enter the current balance of this account in {defaultCountry.currencyCode}.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -228,20 +181,6 @@ export function AddAccountForm() {
                   <FormMessage />
                 </FormItem>
               )}
-            />
-             {/* Hidden field for currencyCode, managed by country selection */}
-            <FormField
-                control={form.control}
-                name="currencyCode"
-                render={({ field }) => (
-                    <FormItem className="hidden">
-                        <FormLabel>Currency Code</FormLabel>
-                        <FormControl>
-                            <Input {...field} readOnly />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
             />
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => router.back()}>

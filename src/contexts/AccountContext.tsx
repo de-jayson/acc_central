@@ -10,14 +10,14 @@ import {
   deleteAccount as deleteAccountService,
 } from '@/services/accountService';
 import { useAuth } from './AuthContext';
-import { defaultCountry } from '@/constants/countries';
+import { defaultCountry } from '@/constants/countries'; // defaultCountry is now Ghana (GHS)
 
 interface AccountContextType {
   accounts: BankAccount[];
   isLoading: boolean;
   fetchAccounts: () => Promise<void>;
-  addAccount: (accountData: Omit<BankAccount, 'id' | 'userId'>) => Promise<BankAccount | void>;
-  updateAccount: (accountId: string, updates: Partial<BankAccount>) => Promise<BankAccount | void>;
+  addAccount: (accountData: Omit<BankAccount, 'id' | 'userId' | 'currencyCode' | 'country'> & Partial<Pick<BankAccount, 'currencyCode' | 'country'>>) => Promise<BankAccount | void>;
+  updateAccount: (accountId: string, updates: Partial<Omit<BankAccount, 'currencyCode' | 'country'>>) => Promise<BankAccount | void>;
   deleteAccount: (accountId: string) => Promise<void>;
   getAccountById: (accountId: string) => BankAccount | undefined;
 }
@@ -38,12 +38,13 @@ export const AccountProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     try {
       const userAccounts = await getAccountsService();
-      // Ensure all accounts have a currencyCode, defaulting if necessary
-      const accountsWithCurrency = userAccounts.map(acc => ({
+      // Ensure all accounts have GHS currencyCode and default country code
+      const accountsWithDefaults = userAccounts.map(acc => ({
         ...acc,
         currencyCode: acc.currencyCode || defaultCountry.currencyCode,
+        country: acc.country || defaultCountry.code,
       }));
-      setAccounts(accountsWithCurrency);
+      setAccounts(accountsWithDefaults);
     } catch (error) {
       console.error("Failed to fetch accounts:", error);
       setAccounts([]); 
@@ -58,15 +59,16 @@ export const AccountProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, authIsLoading, fetchAccounts]);
 
-  const addAccount = async (accountData: Omit<BankAccount, 'id' | 'userId'>) => {
+  const addAccount = async (accountData: Omit<BankAccount, 'id' | 'userId' | 'currencyCode' | 'country'> & Partial<Pick<BankAccount, 'currencyCode' | 'country'>>) => {
     setIsLoading(true);
     try {
       const newAccount = await addAccountService(accountData);
       if (newAccount) {
-        // Ensure the new account has currencyCode before adding to state
+        // Ensure the new account has GHS currencyCode and default country code
         const accountToAdd = {
           ...newAccount,
           currencyCode: newAccount.currencyCode || defaultCountry.currencyCode,
+          country: newAccount.country || defaultCountry.code,
         };
         setAccounts(prev => [...prev, accountToAdd]);
         return accountToAdd;
@@ -79,7 +81,7 @@ export const AccountProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const updateAccount = async (accountId: string, updates: Partial<BankAccount>) => {
+  const updateAccount = async (accountId: string, updates: Partial<Omit<BankAccount, 'currencyCode' | 'country'>>) => {
     setIsLoading(true);
     try {
       const updatedAccount = await updateAccountService(accountId, updates);
@@ -87,6 +89,7 @@ export const AccountProvider = ({ children }: { children: ReactNode }) => {
         const accountToUpdateInState = {
           ...updatedAccount,
           currencyCode: updatedAccount.currencyCode || defaultCountry.currencyCode,
+          country: updatedAccount.country || defaultCountry.code,
         };
         setAccounts(prev => prev.map(acc => acc.id === accountId ? accountToUpdateInState : acc));
         return accountToUpdateInState;
