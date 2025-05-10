@@ -7,25 +7,22 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PlusCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { defaultCountry } from "@/constants/countries"; 
+import { formatCurrencyGHS } from "@/lib/currencyUtils"; // Import the new utility
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { accounts, isLoading: accountsLoading, fetchAccounts } = useAccounts();
 
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-  };
   
-  // Placeholder for edit functionality, could navigate to a form or open a dialog
   const handleEditAccount = (account: any) => {
     console.log("Editing account:", account);
-    // Example: router.push(`/dashboard/edit-account/${account.id}`);
+    // This would ideally navigate to an edit page: router.push(`/dashboard/edit-account/${account.id}`);
     alert(`Edit functionality for "${account.accountName}" is not yet implemented.`);
   };
 
-
-  if (accountsLoading && accounts.length === 0) { // Initial loading state
+  if (accountsLoading && accounts.length === 0) {
     return (
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -65,9 +62,13 @@ export default function DashboardPage() {
 
       {accounts.length > 0 && (
          <div className="bg-card p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold text-primary mb-1">Total Portfolio Value</h2>
-            <p className="text-3xl font-bold text-foreground">{formatCurrency(totalBalance)}</p>
-            <p className="text-sm text-muted-foreground">{accounts.length} account(s) managed</p>
+            <h2 className="text-xl font-semibold text-primary mb-1">
+              Total Portfolio Value
+            </h2>
+            <p className="text-3xl font-bold text-foreground">{formatCurrencyGHS(totalBalance)}</p>
+            <p className="text-sm text-muted-foreground">
+              {accounts.length} account(s) managed in {defaultCountry.currencyCode}.
+            </p>
         </div>
       )}
 
@@ -79,10 +80,10 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="text-center py-12 bg-card rounded-lg shadow">
-          <img src="https://picsum.photos/seed/emptyState/300/200" alt="No accounts" data-ai-hint="empty state illustration" className="mx-auto mb-6 rounded-md" />
+          <img src="https://picsum.photos/seed/emptyStateGhana/300/200" alt="No accounts" data-ai-hint="empty state illustration" className="mx-auto mb-6 rounded-md" />
           <h2 className="text-2xl font-semibold text-primary mb-2">No Accounts Yet</h2>
           <p className="text-muted-foreground mb-6">
-            Get started by adding your first bank account.
+            Get started by adding your first bank account. All accounts are in {defaultCountry.currencyCode}.
           </p>
           <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
             <Link href="/dashboard/add-account">

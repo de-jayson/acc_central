@@ -17,10 +17,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import React from "react"; 
+import { defaultCountry } from "@/constants/countries"; 
+import { formatCurrencyGHS } from "@/lib/currencyUtils"; // Import the new utility
 
 interface AccountCardProps {
   account: BankAccount;
-  onEdit?: (account: BankAccount) => void; // Optional: Placeholder for edit functionality
+  onEdit?: (account: BankAccount) => void;
 }
 
 const accountTypeIcons: Record<AccountType, React.ElementType> = {
@@ -33,15 +36,12 @@ const accountTypeIcons: Record<AccountType, React.ElementType> = {
   [AccountType.OTHER]: FileQuestion,
 };
 
-export function AccountCard({ account, onEdit }: AccountCardProps) {
+export const AccountCard = React.memo(function AccountCardComponent({ account, onEdit }: AccountCardProps) {
   const { toast } = useToast();
   const { deleteAccount: deleteAccountContext, isLoading } = useAccounts();
 
   const IconComponent = accountTypeIcons[account.accountType] || LandmarkIcon;
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-  };
+  
 
   const handleDelete = async () => {
     try {
@@ -72,7 +72,7 @@ export function AccountCard({ account, onEdit }: AccountCardProps) {
       </CardHeader>
       <CardContent className="flex-grow space-y-3">
         <div className="text-3xl font-bold text-foreground">
-          {formatCurrency(account.balance)}
+          {formatCurrencyGHS(account.balance)}
         </div>
         {account.description && (
           <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2" title={account.description}>
@@ -123,4 +123,4 @@ export function AccountCard({ account, onEdit }: AccountCardProps) {
       </CardFooter>
     </Card>
   );
-}
+});
