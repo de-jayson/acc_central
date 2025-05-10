@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AccountCard } from "@/components/dashboard/AccountCard";
@@ -6,20 +7,21 @@ import { useAccounts } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { PlusCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation"; // Import useRouter
 import { Skeleton } from "@/components/ui/skeleton";
 import { defaultCountry } from "@/constants/countries"; 
-import { formatCurrencyGHS } from "@/lib/currencyUtils"; // Import the new utility
+import { formatCurrencyGHS } from "@/lib/currencyUtils";
+import type { BankAccount } from "@/types"; // Import BankAccount type
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { accounts, isLoading: accountsLoading, fetchAccounts } = useAccounts();
+  const router = useRouter(); // Initialize useRouter
 
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
   
-  const handleEditAccount = (account: any) => {
-    console.log("Editing account:", account);
-    // This would ideally navigate to an edit page: router.push(`/dashboard/edit-account/${account.id}`);
-    alert(`Edit functionality for "${account.accountName}" is not yet implemented.`);
+  const handleEditAccount = (account: BankAccount) => { // Ensure account type is BankAccount
+    router.push(`/dashboard/edit-account/${account.id}`);
   };
 
   if (accountsLoading && accounts.length === 0) {
