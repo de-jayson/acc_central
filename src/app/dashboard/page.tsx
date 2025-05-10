@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AccountCard } from "@/components/dashboard/AccountCard";
@@ -9,47 +8,13 @@ import { PlusCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { defaultCountry } from "@/constants/countries"; 
+import { formatCurrencyGHS } from "@/lib/currencyUtils"; // Import the new utility
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { accounts, isLoading: accountsLoading, fetchAccounts } = useAccounts();
 
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
-
-  const formatCurrency = (amount: number) => {
-    // Always use GHS for this application
-    const currencyCode = defaultCountry.currencyCode; // GHS
-    const locale = 'en-GH'; // Locale for Ghana
-
-    if (currencyCode === 'GHS') {
-      const numberPartOptions: Intl.NumberFormatOptions = {
-        style: 'decimal', // Format as a plain number
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      };
-
-      if (amount < 0) {
-        const absNumberFormatted = new Intl.NumberFormat(locale, numberPartOptions).format(Math.abs(amount));
-        return `-${defaultCountry.currencySymbol}${absNumberFormatted}`; // e.g., -GH₵1,234.50
-      } else {
-        const numberFormatted = new Intl.NumberFormat(locale, numberPartOptions).format(amount);
-        return `${defaultCountry.currencySymbol}${numberFormatted}`; // e.g., GH₵1,234.50
-      }
-    } else {
-      // Fallback for any non-GHS currency (currently not expected to be used)
-      // This part maintains basic behavior for other currencies if introduced later.
-      try {
-        return new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode }).format(amount);
-      } catch (error) {
-        console.warn(`Currency formatting error for ${currencyCode}. Defaulting to basic display.`);
-        // Determine symbol for other currency codes or use the code itself.
-        // For this app, defaultCountry.currencySymbol is GH₵.
-        // If currencyCode was, e.g., USD, we'd need a map or logic for its symbol.
-        const symbol = currencyCode === defaultCountry.currencyCode ? defaultCountry.currencySymbol : currencyCode;
-        return `${symbol}${amount.toFixed(2)}`;
-      }
-    }
-  };
   
   const handleEditAccount = (account: any) => {
     console.log("Editing account:", account);
@@ -100,7 +65,7 @@ export default function DashboardPage() {
             <h2 className="text-xl font-semibold text-primary mb-1">
               Total Portfolio Value
             </h2>
-            <p className="text-3xl font-bold text-foreground">{formatCurrency(totalBalance)}</p>
+            <p className="text-3xl font-bold text-foreground">{formatCurrencyGHS(totalBalance)}</p>
             <p className="text-sm text-muted-foreground">
               {accounts.length} account(s) managed in {defaultCountry.currencyCode}.
             </p>

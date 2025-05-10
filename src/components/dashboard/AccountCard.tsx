@@ -1,4 +1,3 @@
-
 import type { BankAccount } from "@/types";
 import { AccountType } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import React from "react"; 
 import { defaultCountry } from "@/constants/countries"; 
+import { formatCurrencyGHS } from "@/lib/currencyUtils"; // Import the new utility
 
 interface AccountCardProps {
   account: BankAccount;
@@ -41,38 +41,6 @@ export const AccountCard = React.memo(function AccountCardComponent({ account, o
   const { deleteAccount: deleteAccountContext, isLoading } = useAccounts();
 
   const IconComponent = accountTypeIcons[account.accountType] || LandmarkIcon;
-
-  const formatCurrency = (amount: number, currencyCodeProvided?: string) => {
-    const currencyCode = currencyCodeProvided || defaultCountry.currencyCode; // defaults to GHS
-    const locale = 'en-GH'; // Locale for Ghana, as all accounts are GHS
-
-    if (currencyCode === 'GHS') {
-      const numberPartOptions: Intl.NumberFormatOptions = {
-        style: 'decimal', // Format as a plain number
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      };
-
-      if (amount < 0) {
-        const absNumberFormatted = new Intl.NumberFormat(locale, numberPartOptions).format(Math.abs(amount));
-        return `-${defaultCountry.currencySymbol}${absNumberFormatted}`; // e.g., -GH₵1,234.50
-      } else {
-        const numberFormatted = new Intl.NumberFormat(locale, numberPartOptions).format(amount);
-        return `${defaultCountry.currencySymbol}${numberFormatted}`; // e.g., GH₵1,234.50
-      }
-    } else {
-      // Fallback for any non-GHS currency (currently not expected to be used)
-      try {
-        return new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode }).format(amount);
-      } catch (error) {
-        console.warn(`Currency formatting error for ${currencyCode}. Displaying with symbol from constants or code.`);
-        // Determine symbol for other currency codes or use the code itself.
-        // For this app, defaultCountry.currencySymbol is GH₵.
-        const symbol = currencyCode === defaultCountry.currencyCode ? defaultCountry.currencySymbol : currencyCode;
-        return `${symbol}${amount.toFixed(2)}`;
-      }
-    }
-  };
   
 
   const handleDelete = async () => {
@@ -104,7 +72,7 @@ export const AccountCard = React.memo(function AccountCardComponent({ account, o
       </CardHeader>
       <CardContent className="flex-grow space-y-3">
         <div className="text-3xl font-bold text-foreground">
-          {formatCurrency(account.balance, account.currencyCode)}
+          {formatCurrencyGHS(account.balance)}
         </div>
         {account.description && (
           <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2" title={account.description}>
