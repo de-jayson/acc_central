@@ -2,6 +2,8 @@ import type { User, BankAccount } from '@/types';
 import { getItem, setItem, removeItem } from '@/lib/localStorageClient';
 import { LOGGED_IN_USER_KEY, USERS_KEY, BANK_ACCOUNTS_KEY } from '@/constants/storageKeys';
 
+const MAX_AVATAR_DATA_URL_LENGTH = 1 * 1024 * 1024; // 1MB limit for the base64 string (approx 700-750KB image file)
+
 /**
  * Simulates signing up a new user.
  * In a real app, this would involve hashing passwords and a database.
@@ -93,6 +95,10 @@ export async function updateUsername(oldUsername: string, newUsername: string): 
     throw new Error("New username must be at least 3 characters.");
   }
   if (oldUsername === newUsername) {
+    // Silently return current user if username is unchanged to avoid unnecessary error message
+    const currentUser = getCurrentUser();
+    if(currentUser && currentUser.username === oldUsername) return currentUser;
+    // If somehow current user is not found, proceed to throw (though this path is less likely)
     throw new Error("New username is the same as the current username.");
   }
 
@@ -159,6 +165,10 @@ export async function updatePassword(username: string, newPassword: string): Pro
  * @returns A Promise that resolves to the updated User object.
  */
 export async function updateUserAvatar(username: string, avatarDataUrl: string): Promise<User> {
+  if (avatarDataUrl.length > MAX_AVATAR_DATA_URL_LENGTH) {
+    throw new Error("Profile picture is too large. Please choose a smaller image (e.g., under 700KB).");
+  }
+
   let users = getItem<User[]>(USERS_KEY) || [];
   const userIndex = users.findIndex(u => u.username === username);
 
