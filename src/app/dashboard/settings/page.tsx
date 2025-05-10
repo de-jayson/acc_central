@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import type { UserSettings } from "@/types";
 import { getUserSettings, saveUserSettings } from "@/services/userSettingsService";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils"; // Added import for cn
 
 type Theme = "light" | "dark" | "system";
 
