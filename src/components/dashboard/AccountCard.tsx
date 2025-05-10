@@ -1,3 +1,4 @@
+
 import type { BankAccount } from "@/types";
 import { AccountType } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import React from "react"; 
-import { defaultCountry } from "@/constants/countries"; // defaultCountry is now Ghana (GHS)
+import { defaultCountry } from "@/constants/countries"; 
 
 interface AccountCardProps {
   account: BankAccount;
@@ -41,16 +42,38 @@ export const AccountCard = React.memo(function AccountCardComponent({ account, o
 
   const IconComponent = accountTypeIcons[account.accountType] || LandmarkIcon;
 
-  const formatCurrency = (amount: number, currencyCode: string = defaultCountry.currencyCode) => {
-    const effectiveCurrencyCode = currencyCode || defaultCountry.currencyCode;
-    const locale = effectiveCurrencyCode === "GHS" ? 'en-GH' : 'en-US'; // Use appropriate locale
-    try {
-      return new Intl.NumberFormat(locale, { style: 'currency', currency: effectiveCurrencyCode }).format(amount);
-    } catch (error) {
-      console.warn(`Invalid currency code: ${effectiveCurrencyCode}. Displaying with symbol.`);
-      return `${defaultCountry.currencySymbol}${amount.toFixed(2)}`;
+  const formatCurrency = (amount: number, currencyCodeProvided?: string) => {
+    const currencyCode = currencyCodeProvided || defaultCountry.currencyCode; // defaults to GHS
+    const locale = 'en-GH'; // Locale for Ghana, as all accounts are GHS
+
+    if (currencyCode === 'GHS') {
+      const numberPartOptions: Intl.NumberFormatOptions = {
+        style: 'decimal', // Format as a plain number
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      };
+
+      if (amount < 0) {
+        const absNumberFormatted = new Intl.NumberFormat(locale, numberPartOptions).format(Math.abs(amount));
+        return `-${defaultCountry.currencySymbol}${absNumberFormatted}`; // e.g., -GH₵1,234.50
+      } else {
+        const numberFormatted = new Intl.NumberFormat(locale, numberPartOptions).format(amount);
+        return `${defaultCountry.currencySymbol}${numberFormatted}`; // e.g., GH₵1,234.50
+      }
+    } else {
+      // Fallback for any non-GHS currency (currently not expected to be used)
+      try {
+        return new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode }).format(amount);
+      } catch (error) {
+        console.warn(`Currency formatting error for ${currencyCode}. Displaying with symbol from constants or code.`);
+        // Determine symbol for other currency codes or use the code itself.
+        // For this app, defaultCountry.currencySymbol is GH₵.
+        const symbol = currencyCode === defaultCountry.currencyCode ? defaultCountry.currencySymbol : currencyCode;
+        return `${symbol}${amount.toFixed(2)}`;
+      }
     }
   };
+  
 
   const handleDelete = async () => {
     try {
