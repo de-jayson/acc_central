@@ -12,6 +12,8 @@ export interface BankAccount {
   bankName: string;
   balance: number;
   accountType: AccountType; // e.g., Checking, Savings
+  currencyCode: string; // e.g., "USD", "EUR"
+  country?: string; // e.g., "US", "DE" (ISO 3166-1 alpha-2 code)
   description?: string;
   category?: string; // AI categorized
   categoryConfidence?: number;

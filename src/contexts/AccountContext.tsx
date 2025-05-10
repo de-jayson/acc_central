@@ -10,6 +10,7 @@ import {
   deleteAccount as deleteAccountService,
 } from '@/services/accountService';
 import { useAuth } from './AuthContext';
+import { defaultCountry } from '@/constants/countries';
 
 interface AccountContextType {
   accounts: BankAccount[];
@@ -37,17 +38,21 @@ export const AccountProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     try {
       const userAccounts = await getAccountsService();
-      setAccounts(userAccounts);
+      // Ensure all accounts have a currencyCode, defaulting if necessary
+      const accountsWithCurrency = userAccounts.map(acc => ({
+        ...acc,
+        currencyCode: acc.currencyCode || defaultCountry.currencyCode,
+      }));
+      setAccounts(accountsWithCurrency);
     } catch (error) {
       console.error("Failed to fetch accounts:", error);
-      setAccounts([]); // Reset accounts on error
+      setAccounts([]); 
     } finally {
       setIsLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
-    // Fetch accounts when user is authenticated and auth loading is complete
     if (!authIsLoading) {
         fetchAccounts();
     }
@@ -58,8 +63,13 @@ export const AccountProvider = ({ children }: { children: ReactNode }) => {
     try {
       const newAccount = await addAccountService(accountData);
       if (newAccount) {
-        setAccounts(prev => [...prev, newAccount]);
-        return newAccount;
+        // Ensure the new account has currencyCode before adding to state
+        const accountToAdd = {
+          ...newAccount,
+          currencyCode: newAccount.currencyCode || defaultCountry.currencyCode,
+        };
+        setAccounts(prev => [...prev, accountToAdd]);
+        return accountToAdd;
       }
     } catch (error) {
       console.error("Failed to add account:", error);
@@ -74,8 +84,12 @@ export const AccountProvider = ({ children }: { children: ReactNode }) => {
     try {
       const updatedAccount = await updateAccountService(accountId, updates);
       if (updatedAccount) {
-        setAccounts(prev => prev.map(acc => acc.id === accountId ? updatedAccount : acc));
-        return updatedAccount;
+        const accountToUpdateInState = {
+          ...updatedAccount,
+          currencyCode: updatedAccount.currencyCode || defaultCountry.currencyCode,
+        };
+        setAccounts(prev => prev.map(acc => acc.id === accountId ? accountToUpdateInState : acc));
+        return accountToUpdateInState;
       }
     } catch (error) {
       console.error("Failed to update account:", error);

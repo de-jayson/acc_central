@@ -17,10 +17,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import React from "react"; // Import React for React.memo
+import { defaultCountry } from "@/constants/countries";
 
 interface AccountCardProps {
   account: BankAccount;
-  onEdit?: (account: BankAccount) => void; // Optional: Placeholder for edit functionality
+  onEdit?: (account: BankAccount) => void;
 }
 
 const accountTypeIcons: Record<AccountType, React.ElementType> = {
@@ -33,14 +35,21 @@ const accountTypeIcons: Record<AccountType, React.ElementType> = {
   [AccountType.OTHER]: FileQuestion,
 };
 
-export function AccountCard({ account, onEdit }: AccountCardProps) {
+// Wrap AccountCardComponent with React.memo
+export const AccountCard = React.memo(function AccountCardComponent({ account, onEdit }: AccountCardProps) {
   const { toast } = useToast();
   const { deleteAccount: deleteAccountContext, isLoading } = useAccounts();
 
   const IconComponent = accountTypeIcons[account.accountType] || LandmarkIcon;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  const formatCurrency = (amount: number, currencyCode: string) => {
+    try {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(amount);
+    } catch (error) {
+      // Fallback for invalid currency codes (e.g. for older accounts before currency was introduced)
+      console.warn(`Invalid currency code: ${currencyCode}. Defaulting to USD display.`);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: defaultCountry.currencyCode }).format(amount);
+    }
   };
 
   const handleDelete = async () => {
@@ -72,7 +81,7 @@ export function AccountCard({ account, onEdit }: AccountCardProps) {
       </CardHeader>
       <CardContent className="flex-grow space-y-3">
         <div className="text-3xl font-bold text-foreground">
-          {formatCurrency(account.balance)}
+          {formatCurrency(account.balance, account.currencyCode || defaultCountry.currencyCode)}
         </div>
         {account.description && (
           <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2" title={account.description}>
@@ -123,4 +132,4 @@ export function AccountCard({ account, onEdit }: AccountCardProps) {
       </CardFooter>
     </Card>
   );
-}
+});

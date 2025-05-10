@@ -1,4 +1,5 @@
 import { Wallet } from 'lucide-react'; // Using Wallet icon for the logo
+import React from 'react'; // Import React for React.memo
 
 interface LogoProps {
   className?: string;
@@ -6,7 +7,7 @@ interface LogoProps {
   textSize?: string;
 }
 
-export function Logo({ className, iconSize = 28, textSize = "text-2xl" }: LogoProps) {
+export const Logo = React.memo(function LogoComponent({ className, iconSize = 28, textSize = "text-2xl" }: LogoProps) {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <Wallet color="hsl(var(--accent))" size={iconSize} />
@@ -15,4 +16,4 @@ export function Logo({ className, iconSize = 28, textSize = "text-2xl" }: LogoPr
       </h1>
     </div>
   );
-}
+});

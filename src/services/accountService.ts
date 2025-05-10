@@ -2,6 +2,7 @@ import type { BankAccount } from '@/types';
 import { getItem, setItem } from '@/lib/localStorageClient';
 import { BANK_ACCOUNTS_KEY } from '@/constants/storageKeys';
 import { getCurrentUser } from './authService';
+import { defaultCountry } from '@/constants/countries';
 
 /**
  * Retrieves all bank accounts for the current user from localStorage.
@@ -12,26 +13,30 @@ export async function getAccounts(): Promise<BankAccount[]> {
   if (!currentUser) return [];
 
   const allAccounts = getItem<BankAccount[]>(BANK_ACCOUNTS_KEY) || [];
-  return allAccounts.filter(acc => acc.userId === currentUser.username);
+  return allAccounts.filter(acc => acc.userId === currentUser.username)
+    .map(acc => ({
+      ...acc, // ensure defaults if old accounts exist
+      currencyCode: acc.currencyCode || defaultCountry.currencyCode, 
+      country: acc.country 
+    }));
 }
 
 /**
  * Adds a new bank account for the current user to localStorage.
- * @param accountData Partial data for the new bank account.
+ * @param accountData Partial data for the new bank account, including currencyCode and optionally country.
  * @returns A Promise that resolves to the newly created BankAccount object.
  */
 export async function addAccount(accountData: Omit<BankAccount, 'id' | 'userId'>): Promise<BankAccount> {
   const currentUser = getCurrentUser();
   if (!currentUser) throw new Error('User not authenticated');
 
-  const accounts = await getAccounts(); // Gets accounts for current user, but we need all to add
   const allAccounts = getItem<BankAccount[]>(BANK_ACCOUNTS_KEY) || [];
 
-
   const newAccount: BankAccount = {
-    ...accountData,
     id: Date.now().toString(), // Simple unique ID
     userId: currentUser.username,
+    ...accountData,
+    currencyCode: accountData.currencyCode || defaultCountry.currencyCode, // Ensure currencyCode
   };
 
   allAccounts.push(newAccount);
@@ -56,7 +61,12 @@ export async function updateAccount(accountId: string, updates: Partial<BankAcco
     throw new Error('Account not found or not owned by user.');
   }
 
-  allAccounts[accountIndex] = { ...allAccounts[accountIndex], ...updates };
+  allAccounts[accountIndex] = { 
+    ...allAccounts[accountIndex], 
+    ...updates,
+    // Ensure currencyCode remains if not explicitly updated, or set a default if it became undefined
+    currencyCode: updates.currencyCode || allAccounts[accountIndex].currencyCode || defaultCountry.currencyCode
+  };
   setItem(BANK_ACCOUNTS_KEY, allAccounts);
   return allAccounts[accountIndex];
 }
