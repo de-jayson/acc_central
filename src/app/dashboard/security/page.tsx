@@ -27,13 +27,15 @@ const recentActivity = [
 
 export default function SecurityPage() {
   const { toast } = useToast();
-  const [is2FAEnabled, setIs2FAEnabled] = React.useState(false);
+  const [is2FAEnabled, setIs2FAEnabled] = React.useState(false); // Mock state
 
-  const handleToggle2FA = () => {
-    setIs2FAEnabled(!is2FAEnabled);
+  const handleToggle2FA = (checked: boolean) => {
+    setIs2FAEnabled(checked);
+    // In a real app, this would trigger a setup flow or backend update.
+    // For this demo, we just show a toast.
     toast({
-      title: `Two-Factor Authentication ${!is2FAEnabled ? "Enabled" : "Disabled"} (Mock)`,
-      description: `2FA status has been updated. This is a mock action.`,
+      title: `Two-Factor Authentication ${checked ? "Enabled" : "Disabled"}`,
+      description: `2FA status has been updated. (This is a mock action for the demo).`,
     });
   };
 
@@ -47,33 +49,33 @@ export default function SecurityPage() {
             <ShieldCheck className="h-5 w-5 text-accent" />
             Two-Factor Authentication (2FA)
           </CardTitle>
-          <CardDescription>Add an extra layer of security to your account.</CardDescription>
+          <CardDescription>Add an extra layer of security to your account. (Mock)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between space-x-2 p-3 rounded-md border hover:bg-secondary/30">
-            <Label htmlFor="enable-2fa" className="font-medium">
+            <Label htmlFor="enable-2fa" className="font-medium cursor-pointer flex-grow">
               Enable Two-Factor Authentication
               <p className="text-xs text-muted-foreground">
                 {is2FAEnabled 
-                  ? "2FA is currently active. You will be prompted for a code from your authenticator app upon login." 
+                  ? "2FA is currently active. You would be prompted for a code from your authenticator app upon login." 
                   : "Protect your account with an additional verification step during login."}
               </p>
             </Label>
             <Switch
               id="enable-2fa"
               checked={is2FAEnabled}
-              onCheckedChange={handleToggle2FA}
+              onCheckedChange={handleToggle2FA} // Pass the new checked state
             />
           </div>
            {is2FAEnabled && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm">
+            <div className="p-3 bg-green-100 border border-green-300 rounded-md text-green-700 text-sm dark:bg-green-900/30 dark:border-green-700 dark:text-green-300">
               <Smartphone className="inline h-4 w-4 mr-1" /> 
-              2FA is active. You're more secure!
+              2FA is active. You&apos;re more secure! (Mock)
             </div>
           )}
           {!is2FAEnabled && (
-             <Button onClick={handleToggle2FA} variant="outline">
-                Set Up 2FA
+             <Button onClick={() => handleToggle2FA(true)} variant="outline" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                Set Up 2FA (Mock)
             </Button>
           )}
         </CardContent>
@@ -128,7 +130,7 @@ export default function SecurityPage() {
                   <TableCell>{activity.device}</TableCell>
                   <TableCell>{activity.ip}</TableCell>
                   <TableCell>
-                     <span className={`${activity.status === "Successful" ? "text-green-600" : "text-red-600"} font-medium`}>
+                     <span className={`${activity.status === "Successful" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"} font-medium`}>
                        {activity.status}
                      </span>
                   </TableCell>

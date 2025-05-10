@@ -27,3 +27,10 @@ export enum AccountType {
   MORTGAGE = "Mortgage",
   OTHER = "Other",
 }
+
+export interface UserSettings {
+  theme?: "light" | "dark" | "system";
+  emailNotifications?: boolean;
+  pushNotifications?: boolean;
+  shareData?: boolean;
+}

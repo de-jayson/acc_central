@@ -43,6 +43,14 @@ const faqs = [
     question: "How can I change my password?",
     answer: "You can change your password on the 'Profile' page, accessible from the user menu in the top right corner of the dashboard.",
   },
+  {
+    question: "How do I change my username?",
+    answer: "Navigate to the 'Profile' page. You can update your username there. Note that changing your username will update its association with your bank accounts.",
+  },
+  {
+    question: "How do I customize application settings like theme?",
+    answer: "Go to the 'Settings' page from the sidebar. There you can change the application theme (Light, Dark, System), and manage notification and data preferences.",
+  },
 ];
 
 export default function HelpSupportPage() {
@@ -54,10 +62,11 @@ export default function HelpSupportPage() {
   });
 
   const onSubmitContact = async (values: z.infer<typeof contactFormSchema>) => {
-    // Mock functionality
+    // Mock functionality: In a real app, this would send data to a backend.
+    console.log("Support Request:", values);
     toast({
       title: "Message Sent (Mock)",
-      description: "Your support request has been received. We'll get back to you shortly.",
+      description: "Your support request has been received. We'll get back to you shortly. (This is a mock action for the demo).",
     });
     form.reset();
   };

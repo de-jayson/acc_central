@@ -2,13 +2,15 @@
 "use client";
 
 import type { User } from '@/types';
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import {
   signUp as signUpService,
   logIn as logInService,
   logOut as logOutService,
   getCurrentUser as getCurrentUserService,
-  isAuthenticated as isAuthenticatedService
+  isAuthenticated as isAuthenticatedService,
+  updateUsername as updateUsernameService,
+  updatePassword as updatePasswordService,
 } from '@/services/authService';
 import { useRouter } from 'next/navigation';
 
@@ -19,6 +21,8 @@ interface AuthContextType {
   signUp: (username: string, password?: string) => Promise<User | void>;
   logIn: (username: string, password?: string) => Promise<User | void>;
   logOut: () => Promise<void>;
+  updateUsername: (newUsername: string) => Promise<User | void>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -82,8 +86,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateUsername = useCallback(async (newUsername: string) => {
+    if (!user) throw new Error("User not authenticated");
+    setIsLoading(true);
+    try {
+      const updatedUser = await updateUsernameService(user.username, newUsername);
+      setUser(updatedUser); // Update context state
+      return updatedUser;
+    } catch (error) {
+      console.error("Update username failed:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, setUser]);
+
+  const updatePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    // currentPassword is not used in the mock service
+    if (!user) throw new Error("User not authenticated");
+    setIsLoading(true);
+    try {
+      await updatePasswordService(user.username, newPassword);
+      // No user state change needed as password isn't stored in context
+    } catch (error) {
+      console.error("Update password failed:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user && isAuthenticatedService() ,isLoading, signUp, logIn, logOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isAuthenticated: !!user && isAuthenticatedService(), 
+      isLoading, 
+      signUp, 
+      logIn, 
+      logOut,
+      updateUsername,
+      updatePassword
+    }}>
       {children}
     </AuthContext.Provider>
   );

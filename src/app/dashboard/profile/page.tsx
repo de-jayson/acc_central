@@ -27,7 +27,7 @@ const changeUsernameSchema = z.object({
 });
 
 const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required."),
+  currentPassword: z.string().min(1, "Current password is required."), // Remains for UI, but not validated by mock service
   newPassword: z.string().min(6, "New password must be at least 6 characters."),
   confirmNewPassword: z.string(),
 }).refine(data => data.newPassword === data.confirmNewPassword, {
@@ -36,7 +36,7 @@ const changePasswordSchema = z.object({
 });
 
 export default function ProfilePage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, updateUsername, updatePassword } = useAuth();
   const { toast } = useToast();
   const [showCurrentPassword, setShowCurrentPassword] = React.useState(false);
   const [showNewPassword, setShowNewPassword] = React.useState(false);
@@ -44,8 +44,14 @@ export default function ProfilePage() {
 
   const usernameForm = useForm<z.infer<typeof changeUsernameSchema>>({
     resolver: zodResolver(changeUsernameSchema),
-    defaultValues: { newUsername: "" },
+    defaultValues: { newUsername: user?.username || "" },
   });
+
+  React.useEffect(() => {
+    if (user) {
+      usernameForm.reset({ newUsername: user.username });
+    }
+  }, [user, usernameForm]);
 
   const passwordForm = useForm<z.infer<typeof changePasswordSchema>>({
     resolver: zodResolver(changePasswordSchema),
@@ -58,24 +64,47 @@ export default function ProfilePage() {
   };
 
   const onSubmitUsername = async (values: z.infer<typeof changeUsernameSchema>) => {
-    // Mock functionality
-    toast({
-      title: "Username Change Requested",
-      description: `Username change to "${values.newUsername}" is not implemented yet.`,
-    });
-    usernameForm.reset();
+    if (!user || values.newUsername === user.username) {
+      toast({
+        title: "No Change",
+        description: "The new username is the same as the current one.",
+        variant: "default",
+      });
+      return;
+    }
+    try {
+      await updateUsername(values.newUsername);
+      toast({
+        title: "Username Updated",
+        description: `Your username has been changed to "${values.newUsername}".`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Could not update username.",
+        variant: "destructive",
+      });
+    }
   };
 
   const onSubmitPassword = async (values: z.infer<typeof changePasswordSchema>) => {
-    // Mock functionality
-    toast({
-      title: "Password Change Requested",
-      description: "Password change functionality is not implemented yet.",
-    });
-    passwordForm.reset();
+    try {
+      await updatePassword(values.currentPassword, values.newPassword);
+      toast({
+        title: "Password Updated (Mock)",
+        description: "Your password has been successfully updated. (This is a mock operation for the demo).",
+      });
+      passwordForm.reset();
+    } catch (error: any) {
+       toast({
+        title: "Password Update Failed",
+        description: error.message || "Could not update password.",
+        variant: "destructive",
+      });
+    }
   };
 
-  if (authLoading) {
+  if (authLoading && !user) { // Check !user to avoid flashing during username update
     return <div className="p-8">Loading profile...</div>;
   }
 
@@ -106,7 +135,7 @@ export default function ProfilePage() {
             <User className="h-5 w-5 text-accent" />
             Change Username
           </CardTitle>
-          <CardDescription>Update your display name.</CardDescription>
+          <CardDescription>Update your display name. This will affect how your accounts are linked.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...usernameForm}>
@@ -124,7 +153,9 @@ export default function ProfilePage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground">Save Username</Button>
+              <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={authLoading}>
+                {authLoading ? "Saving..." : "Save Username"}
+              </Button>
             </form>
           </Form>
         </CardContent>
@@ -136,7 +167,7 @@ export default function ProfilePage() {
             <KeyRound className="h-5 w-5 text-accent" />
             Change Password
           </CardTitle>
-          <CardDescription>Update your account password. Make sure it&apos;s strong!</CardDescription>
+          <CardDescription>Update your account password. Make sure it&apos;s strong! (Mock)</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...passwordForm}>
@@ -149,7 +180,7 @@ export default function ProfilePage() {
                     <FormLabel>Current Password</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input type={showCurrentPassword ? "text" : "password"} placeholder="••••••••" {...field} />
+                        <Input type={showCurrentPassword ? "text" : "password"} placeholder="•••••••• (mock)" {...field} />
                         <Button
                           type="button" variant="ghost" size="icon"
                           className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
@@ -207,7 +238,9 @@ export default function ProfilePage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground">Save Password</Button>
+              <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={authLoading}>
+                {authLoading ? "Saving..." : "Save Password"}
+              </Button>
             </form>
           </Form>
         </CardContent>

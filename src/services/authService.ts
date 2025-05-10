@@ -1,6 +1,6 @@
-import type { User } from '@/types';
+import type { User, BankAccount } from '@/types';
 import { getItem, setItem, removeItem } from '@/lib/localStorageClient';
-import { LOGGED_IN_USER_KEY, USERS_KEY } from '@/constants/storageKeys';
+import { LOGGED_IN_USER_KEY, USERS_KEY, BANK_ACCOUNTS_KEY } from '@/constants/storageKeys';
 
 /**
  * Simulates signing up a new user.
@@ -79,4 +79,72 @@ export function getCurrentUser(): User | null {
  */
 export function isAuthenticated(): boolean {
   return !!getCurrentUser();
+}
+
+/**
+ * Updates the username for the current user.
+ * This also updates the userId for all associated bank accounts.
+ * @param oldUsername The current username.
+ * @param newUsername The new username.
+ * @returns A Promise that resolves to the updated User object.
+ */
+export async function updateUsername(oldUsername: string, newUsername: string): Promise<User> {
+  if (!newUsername || newUsername.trim().length < 3) {
+    throw new Error("New username must be at least 3 characters.");
+  }
+  if (oldUsername === newUsername) {
+    throw new Error("New username is the same as the current username.");
+  }
+
+  let users = getItem<User[]>(USERS_KEY) || [];
+  const existingNewUser = users.find(u => u.username === newUsername);
+  if (existingNewUser) {
+    throw new Error("This username is already taken.");
+  }
+
+  const userIndex = users.findIndex(u => u.username === oldUsername);
+  if (userIndex === -1) {
+    throw new Error("Current user not found.");
+  }
+
+  // Update username in users array
+  users[userIndex].username = newUsername;
+  setItem(USERS_KEY, users);
+
+  // Update logged-in user
+  const loggedInUser = getCurrentUser();
+  if (loggedInUser && loggedInUser.username === oldUsername) {
+    loggedInUser.username = newUsername;
+    setItem(LOGGED_IN_USER_KEY, loggedInUser);
+  }
+
+  // Update userId in bank accounts
+  let bankAccounts = getItem<BankAccount[]>(BANK_ACCOUNTS_KEY) || [];
+  bankAccounts = bankAccounts.map(account => {
+    if (account.userId === oldUsername) {
+      return { ...account, userId: newUsername };
+    }
+    return account;
+  });
+  setItem(BANK_ACCOUNTS_KEY, bankAccounts);
+
+  return { username: newUsername };
+}
+
+/**
+ * Simulates updating the user's password.
+ * In this demo, it does not actually store or change a password.
+ * @param username The user's username.
+ * @param newPassword The new password.
+ * @returns A Promise that resolves when the "operation" is complete.
+ */
+export async function updatePassword(username: string, newPassword: string): Promise<void> {
+  // This is a mock function for the demo.
+  // In a real application, you would securely hash and store the new password
+  // and potentially invalidate old sessions.
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error("New password must be at least 6 characters.");
+  }
+  // No actual password change occurs in localStorage for this demo.
+  return Promise.resolve();
 }
